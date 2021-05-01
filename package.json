@@ -1,5 +1,5 @@
 {
-  "name": "timestitch",
+  "name": "time-stitch",
   "version": "0.0.0",
   "description": "Timeseries math for continuously accruing block of data",
   "main": "dist/index.js",
@@ -27,12 +27,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/kwhitley/timestitch.git"
+    "url": "git+https://github.com/kwhitley/time-stitch.git"
   },
   "author": "Kevin R. Whitley <krwhitley@gmail.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/kwhitley/timestitch/issues"
+    "url": "https://github.com/kwhitley/time-stitch/issues"
   },
   "devDependencies": {
     "@types/jest": "^26.0.23",
