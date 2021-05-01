@@ -1,11 +1,16 @@
-const getDate = item => new Date(item ? (item.timestamp || item.date) : undefined)
+const { isBetween } = require('./utils/isBetween')
 
-const isBetween = (a, b) => c => Boolean(a<c&c<b)
+const getDate = item => new Date(item ? (item.timestamp || item.date) : undefined)
 
 class Segment extends Map {
   constructor(incoming = []) {
     super()
-    this.add(incoming)
+
+    if (Array.isArray(incoming)) {
+      this.add(incoming)
+    } else if (typeof incoming === 'object') {
+      Object.assign(this, incoming)
+    }
   }
 
   // add more entries to the segment
@@ -20,9 +25,9 @@ class Segment extends Map {
       incoming = [...incoming].map(i => i[1]) // get plain values for merging
     }
 
-    for (var entry of incoming) {
+    for (const entry of incoming) {
       let { date, timestamp, ...other } = entry
-      date = +(date || timestamp)
+      date = Number(date || timestamp)
 
       // unify data { date, ...other }
       this.set(date, { date: new Date(date), ...other })
@@ -38,6 +43,33 @@ class Segment extends Map {
     return this
   }
 
+  // returns new Segment cropped between start & end
+  clone(options = {}) {
+    const {
+      start = -Infinity,
+      end = Infinity,
+    } = options
+    const within = isBetween(this.start, this.end)
+    const withinTarget = isBetween(start, end)
+
+    if (within(start) || within(end)) {
+      const values = [...this].filter(i => withinTarget(i[0])).map(i => i[1]) // inefficient
+
+      return new Segment(values)
+    } else {
+      if (withinTarget(this.start)) {
+        return new Segment(this.sorted)
+      }
+    }
+
+    return undefined
+  }
+
+  // returns true|false if date is contained within time segment
+  contains(date) {
+    return isBetween(this.start, this.end)(date)
+  }
+
   // returns true|false if this intersects incoming segment
   intersects(segment) {
     if (!(segment instanceof Segment)) {
@@ -50,11 +82,16 @@ class Segment extends Map {
     return inside(start) || inside(end) || isBetween(start, end)(this.start)
   }
 
+  // returns distance (in ms) between this.start and this.end
+  get duration() {
+    return this.end - this.start
+  }
+
   // sorted getter, cached upon inquiry for memoization
   get sorted() {
     if (this._sorted) return this._sorted
 
-    return this._sorted = [...this].sort((a, b) => a[0] > b[0] ? 1 : -1).map(i => i[1])
+    return (this._sorted = [...this].sort((a, b) => a[0] > b[0] ? 1 : -1).map(i => i[1]))
   }
 }
 

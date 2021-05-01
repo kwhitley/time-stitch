@@ -1,9 +1,20 @@
+const { isBetween } = require('./utils/isBetween')
 const { Segment } = require('./Segment')
 
 class Timeline extends Set {
-  constructor(options = {}) {
+  constructor(...args) {
     super()
-    this.period = options.period
+
+    // add any segments as args, then add config
+    while (args.length) {
+      const arg = args.shift()
+
+      if (arg instanceof Segment) {
+        this.add(arg)
+      } else if (typeof arg === 'object') {
+        this.options = arg
+      }
+    }
 
     return this
   }
@@ -41,12 +52,19 @@ class Timeline extends Set {
     first.add(seg)
 
     // merge other intersections into first and remove them from set
-    for (var i of intersections) {
+    for (const i of intersections) {
       first.add(i)
       this.delete(i)
     }
 
     return this
+  }
+
+  // returns segments cropped between start+end
+  clone(options = {}) {
+    const segments = [...this].map(s => s.clone(options)).filter(s => s) // crop and filter segments
+
+    return new Timeline(...segments)
   }
 
   // return true if single segment from start to finish
@@ -75,7 +93,11 @@ class Timeline extends Set {
   get sorted() {
     if (this._sorted) return this._sorted
 
-    return this._sorted = [...this].sort((a, b) => a.start > b.start ? 1 : -1)
+    return (this._sorted = [...this].sort((a, b) => a.start > b.start ? 1 : -1))
+  }
+
+  get values() {
+    return this.sorted.map(s => s.sorted).flat()
   }
 }
 
