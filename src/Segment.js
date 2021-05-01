@@ -56,10 +56,8 @@ class Segment extends Map {
       const values = [...this].filter(i => withinTarget(i[0])).map(i => i[1]) // inefficient
 
       return new Segment(values)
-    } else {
-      if (withinTarget(this.start)) {
-        return new Segment(this.sorted)
-      }
+    } else if (withinTarget(this.start)) {
+      return new Segment(this.sorted)
     }
 
     return undefined

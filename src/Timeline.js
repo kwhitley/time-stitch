@@ -81,6 +81,21 @@ class Timeline extends Set {
             : undefined
   }
 
+  // returns Timeline of gaps as segments
+  get gaps() {
+    const timeline = new Timeline()
+    const sorted = [...this.sorted]
+
+    while (sorted.length > 1) {
+      const a = sorted.shift()
+      const b = sorted[0]
+
+      timeline.add(new Segment({ start: a.end, end: b.start }))
+    }
+
+    return timeline
+  }
+
   // returns start of all segments
   get start() {
     const segs = [...this]

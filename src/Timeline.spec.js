@@ -26,6 +26,22 @@ describe('Timeline:Set', () => {
     })
   })
 
+  describe('.gaps: Timeline', () => {
+    const a = new Segment(mock.itemsA)
+    const b = new Segment(mock.itemsOutside)
+
+    it('returns gaps within a timeline (as a new Timeline)', () => {
+      const timeline = new Timeline(a, b)
+      const gaps = timeline.gaps
+
+      const gap = [...gaps][0]
+
+      expect(gaps.size).toBe(1)
+      expect(gap.start).toBe(a.end)
+      expect(gap.end).toBe(b.start)
+    })
+  })
+
   describe('.start: boolean', () => {
     it('returns start of first (ordered) segment', () => {
       const late = new Segment(mock.itemsOutside)
