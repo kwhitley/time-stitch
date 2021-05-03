@@ -159,6 +159,13 @@ describe('Timeline:Set', () => {
     const a = new Segment(mock.itemsA)
     const b = new Segment(mock.itemsOutside)
 
+    it('returns undefined if no overlap', () => {
+      const timeline = new Timeline(a)
+      const cloned = timeline.clone(b)
+
+      expect(cloned).toBe(undefined)
+    })
+
     it('returns cloned Timeline if no params... .clone()', () => {
       const timeline = new Timeline(a, b)
       const cloned = timeline.clone()
@@ -168,8 +175,8 @@ describe('Timeline:Set', () => {
     })
 
     it('returns cropped timeline (all segements)', () => {
-      const start = new Date(new Date() - 9500)
-      const end = new Date(new Date() - 5300)
+      const start = new Date(mock.now - 9500)
+      const end = new Date(mock.now - 5300)
 
       const timeline = new Timeline(a, b)
       const cloned = timeline.clone({ start, end })
@@ -180,7 +187,7 @@ describe('Timeline:Set', () => {
     })
 
     it('returns cropped timeline (fewer segments)', () => {
-      const start = new Date(new Date() - 7000)
+      const start = new Date(mock.now - 7000)
 
       const timeline = new Timeline(a, b)
       const cloned = timeline.clone({ start })
@@ -188,6 +195,71 @@ describe('Timeline:Set', () => {
       expect(cloned.size).toBe(1)
       expect(timeline).not.toBe(cloned)
       expect(timeline.values.length).toBeGreaterThan(cloned.values.length)
+    })
+  })
+
+  describe('.fill(...timelines: Timeline): Timeline', () => {
+    const a = new Segment(mock.itemsA)
+    const b = new Segment(mock.itemsOutside)
+    const fillA = new Segment(mock.fillA)
+    const fillB = new Segment(mock.fillB)
+    const timeline = new Timeline(a, b)
+
+    it('throws if not passed a valid Timeline', () => {
+      expect(() => timeline.fill('foo')).toThrow()
+    })
+
+    it('can fill with a background timeline', () => {
+      const filledPartial = timeline.fill(new Timeline(fillA))
+      expect(filledPartial.size).toBe(2)
+      expect(filledPartial.values.length).toBeGreaterThan(timeline.values.length)
+
+      const filledComplete = timeline.fill(new Timeline(fillB), new Timeline(fillA)) // fill with 2 interior timelines
+      expect(filledComplete.size).toBe(1)
+    })
+  })
+
+  describe('.intersection(t: Timeline): Timeline', () => {
+    const a = new Segment(mock.itemsA)
+    const b = new Segment(mock.itemsOutside)
+    const timeline = new Timeline(a, b)
+
+    it('throws if not passed a valid Timeline', () => {
+      expect(() => timeline.intersection('foo')).toThrow()
+    })
+
+    it('can intersect an interior timeline', () => {
+      const start = new Date(mock.now - 9500)
+      const end = new Date(mock.now - 5300)
+
+      const seg = new Segment({ start, end })
+      const interior = new Timeline(seg)
+      const intersection = timeline.intersection(interior)
+
+      expect(intersection.size).toBe(2)
+      expect(intersection.values.length).toBe(4)
+    })
+
+
+    it('can intersect a more advanced, encompassing timeline', () => {
+      const start = new Date(mock.now - 9500)
+      const end = new Date(mock.now - 5300)
+
+      const seg1 = new Segment({
+        start: new Date(mock.now - 12000),
+        end: new Date(mock.now - 9500),
+      })
+
+      const seg2 = new Segment({
+        start: new Date(mock.now - 6800),
+        end: new Date(mock.now - 4000),
+      })
+
+      const interior = new Timeline(seg1, seg2)
+      const intersection = timeline.intersection(interior)
+
+      expect(intersection.size).toBe(2)
+      expect(intersection.values.length).toBe(4)
     })
   })
 })

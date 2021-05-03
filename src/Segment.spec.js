@@ -20,8 +20,8 @@ describe('Segment:Map', () => {
     })
 
     it('extends self if config is passed as object', () => {
-      const start = new Date(new Date() - 1000)
-      const end = new Date()
+      const start = new Date(mock.now - 1000)
+      const end = mock.now
       const seg = new Segment({ start, end })
 
       expect(seg.start).toBe(start)
@@ -31,8 +31,8 @@ describe('Segment:Map', () => {
 
   describe('.duration: Date', () => {
     it('returns the difference (in ms) between end and start', () => {
-      const start = new Date(new Date() - 1000)
-      const end = new Date()
+      const start = new Date(mock.now - 1000)
+      const end = mock.now
       const seg = new Segment({ start, end })
 
       expect(seg.duration).toBe(end - start)
@@ -106,7 +106,7 @@ describe('Segment:Map', () => {
   describe('.clone({ start: this.start, end: this.end }): Segment|undefined', () => {
     it('returns undefined if no overlap', () => {
       const seg = new Segment(mock.itemsA)
-      const start = new Date(Number(new Date()) + 20000)
+      const start = new Date(Number(mock.now) + 20000)
       const end = new Date(Number(start) + 20000)
 
       const cropped = seg.clone({ start, end })
@@ -124,7 +124,7 @@ describe('Segment:Map', () => {
 
     it('returns new Segment cropped to bounds (and uses current start+end as defaults)', () => {
       const seg = new Segment(mock.itemsA)
-      const start = new Date(new Date() - 9500)
+      const start = new Date(mock.now - 9500)
 
       const cropped = seg.clone({ start })
 
@@ -134,7 +134,7 @@ describe('Segment:Map', () => {
     })
 
     it('returns undefined when no overlap', () => {
-      const start = new Date(new Date() - 7000)
+      const start = new Date(mock.now - 7000)
 
       const seg = new Segment(mock.itemsA)
       const cloned = seg.clone({ start })

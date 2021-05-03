@@ -19,6 +19,57 @@ class Timeline extends Set {
     return this
   }
 
+  // return true if single segment from start to finish
+  get isContinuous() {
+    return this.size === 1
+  }
+
+  // returns end of all segments
+  get end() {
+    const segs = [...this]
+
+    return segs.length
+            ? segs.map(s => s.end).reduce((highest, v) => v > highest ? v : highest, -Infinity)
+            : undefined
+  }
+
+  // returns Timeline of gaps as segments
+  get gaps() {
+    const timeline = new Timeline()
+    const sorted = [...this.sorted]
+
+    while (sorted.length > 1) {
+      const a = sorted.shift()
+      const b = sorted[0]
+
+      timeline.add(new Segment({ start: a.end, end: b.start }))
+    }
+
+    return timeline
+  }
+
+  // returns start of all segments
+  get start() {
+    const segs = [...this]
+
+    return segs.length
+            ? segs.map(s => s.start).reduce((lowest, v) => v < lowest ? v : lowest, Infinity)
+            : undefined
+  }
+
+  // returns segments, sorted by start date
+  get sorted() {
+    if (this._sorted) return this._sorted
+
+    return (this._sorted = [...this].sort((a, b) => a.start > b.start ? 1 : -1))
+  }
+
+  // returns array values of all segments
+  get values() {
+    return this.sorted.map(s => s.sorted).flat()
+  }
+
+  // add segments to timeline
   add(incoming = [], ...args) {
     // cache bust
     this._sorted = undefined
@@ -64,55 +115,52 @@ class Timeline extends Set {
   clone(options = {}) {
     const segments = [...this].map(s => s.clone(options)).filter(s => s) // crop and filter segments
 
-    return new Timeline(...segments)
-  }
-
-  // return true if single segment from start to finish
-  get isContinuous() {
-    return this.size === 1
-  }
-
-  // returns end of all segments
-  get end() {
-    const segs = [...this]
-
-    return segs.length
-            ? segs.map(s => s.end).reduce((highest, v) => v > highest ? v : highest, -Infinity)
+    return segments.length
+            ? new Timeline(...segments)
             : undefined
   }
 
-  // returns Timeline of gaps as segments
-  get gaps() {
-    const timeline = new Timeline()
-    const sorted = [...this.sorted]
+  // clones this timeline, then returns a version filled with other timeline layers
+  fill(...timelines) {
+    const base = this.clone()
 
-    while (sorted.length > 1) {
-      const a = sorted.shift()
-      const b = sorted[0]
+    while (!this.isContinuous && timelines.length) {
+      const t = timelines.shift()
+      if (!(t instanceof Timeline)) {
+        throw new TypeError('Timeline.fill(...timelines) must be passed type Timelines')
+      }
 
-      timeline.add(new Segment({ start: a.end, end: b.start }))
+      const gaps = this.gaps
+      const fill = t.intersection(this.gaps) // fill from the intersection of incoming timeline and gaps in this one
+
+      for (const s of [...fill]) {
+        base.add(s)
+      }
     }
 
-    return timeline
+    return base
   }
 
-  // returns start of all segments
-  get start() {
-    const segs = [...this]
+  // returns the intersection of two timelines
+  intersection(timeline) {
+    if (!(timeline instanceof Timeline)) {
+      throw new TypeError('Timeline.intersection(Timeline) requires a Timeline argument')
+    }
 
-    return segs.length
-            ? segs.map(s => s.start).reduce((lowest, v) => v < lowest ? v : lowest, Infinity)
-            : undefined
-  }
+    const start = Math.max(this.start, timeline.start)
+    const end = Math.min(this.end, timeline.end)
 
-  get sorted() {
-    if (this._sorted) return this._sorted
+    const segments = [...timeline]
+    const intersections = segments.map(seg => this.clone({ start: Math.max(seg.start, start), end: Math.min(seg.end, end) })) // map segments into a series of intersection timelines
+    const base = new Timeline()
 
-    return (this._sorted = [...this].sort((a, b) => a.start > b.start ? 1 : -1))
-  }
+    for (const t of intersections) {
+      for (const s of [...t]) {
+        base.add(s) // add each segment to base timeline
+      }
+    }
 
-  get values() {
-    return this.sorted.map(s => s.sorted).flat()
+    return base
   }
 }
 

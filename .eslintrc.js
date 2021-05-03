@@ -137,7 +137,7 @@ module.exports = {
         'no-lonely-if': 'error',
         'no-loop-func': 'error',
         'no-loss-of-precision': 'error',
-        'no-mixed-operators': 'error',
+        'no-mixed-operators': 'off',
         'no-mixed-requires': 'error',
         'no-multi-assign': 'off',
         'no-multi-spaces': 'error',
