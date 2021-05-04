@@ -19,11 +19,6 @@ class Timeline extends Set {
     return this
   }
 
-  // return true if single segment from start to finish
-  get isContinuous() {
-    return this.size === 1
-  }
-
   // returns end of all segments
   get end() {
     const segs = [...this]
@@ -48,6 +43,11 @@ class Timeline extends Set {
     return timeline
   }
 
+  // return true if single segment from start to finish
+  get isContinuous() {
+    return this.size === 1
+  }
+
   // returns start of all segments
   get start() {
     const segs = [...this]
@@ -59,7 +59,7 @@ class Timeline extends Set {
 
   // returns segments, sorted by start date
   get sorted() {
-    if (this._sorted) return this._sorted
+    if (this._sorted && this._sorted.length === this.size) return this._sorted
 
     return (this._sorted = [...this].sort((a, b) => a.start > b.start ? 1 : -1))
   }
@@ -72,8 +72,6 @@ class Timeline extends Set {
   // add segments to timeline
   add(incoming = [], ...args) {
     // cache bust
-    this._sorted = undefined
-
     // allows n args (sends each independently to this.add)
     if (args.length) {
       this.add(incoming)
@@ -82,6 +80,7 @@ class Timeline extends Set {
         this.add(arg)
       }
 
+      this._sorted = undefined
       return this
     }
 
@@ -89,11 +88,12 @@ class Timeline extends Set {
                 ? incoming
                 : new Segment(incoming)
 
-    const intersections = [...this].filter(s => s.intersects(seg))
+    const intersections = [...this.sorted].filter(s => s.intersects(seg))
 
     if (intersections.length === 0) {
       super.add(seg)
 
+      this._sorted = undefined
       return this
     }
 
@@ -108,6 +108,7 @@ class Timeline extends Set {
       this.delete(i)
     }
 
+    this._sorted = undefined
     return this
   }
 
@@ -130,8 +131,8 @@ class Timeline extends Set {
         throw new TypeError('Timeline.fill(...timelines) must be passed type Timelines')
       }
 
-      const gaps = this.gaps
-      const fill = t.intersection(this.gaps) // fill from the intersection of incoming timeline and gaps in this one
+      const gaps = base.gaps
+      const fill = t.intersection(gaps) // fill from the intersection of incoming timeline and gaps in this one
 
       for (const s of [...fill]) {
         base.add(s)
@@ -147,20 +148,56 @@ class Timeline extends Set {
       throw new TypeError('Timeline.intersection(Timeline) requires a Timeline argument')
     }
 
-    const start = Math.max(this.start, timeline.start)
-    const end = Math.min(this.end, timeline.end)
+    const t1 = this.sorted
+    const t2 = timeline.sorted
+    const intersections = []
 
-    const segments = [...timeline]
-    const intersections = segments.map(seg => this.clone({ start: Math.max(seg.start, start), end: Math.min(seg.end, end) })) // map segments into a series of intersection timelines
-    const base = new Timeline()
+    // shortuct if either timeline is empty
+    if (t2.size < 1 || t1.size < 1) return undefined
 
-    for (const t of intersections) {
-      for (const s of [...t]) {
-        base.add(s) // add each segment to base timeline
+    let a = t1.shift()
+    let b = t2.shift()
+    let ticks = 0
+
+
+    // console.log({ t1, t2, a, b })
+
+    while (a && b && ticks < 100) {
+      // console.log('a', a.constructor.name)
+      // console.log('b', b.constructor.name)
+      const intersection = a.intersection(b)
+      ticks += 1
+
+      if (intersection) {
+        intersections.push(intersection)
+      }
+
+      if (a.end < b.end) {
+        a = t1.shift()
+        // console.log('shifting from t1', a)
+      } else {
+        b = t2.shift()
+        // console.log('shifting from t2', b)
       }
     }
 
-    return base
+    // const start = Math.max(this.start, timeline.start)
+    // const end = Math.min(this.end, timeline.end)
+
+    // const segments = [...timeline]
+    // const intersections = segments.map(seg => this.clone({ start: Math.max(seg.start, start), end: Math.min(seg.end, end) })) // map segments into a series of intersection timelines
+    // const base = new Timeline()
+
+    // for (const t of intersections) {
+    //   for (const s of [...t]) {
+    //     base.add(s) // add each segment to base timeline
+    //   }
+    // }
+
+    // return base
+    return intersections.length
+    ? new Timeline(...intersections)
+    : undefined
   }
 }
 

@@ -69,6 +69,22 @@ class Segment extends Map {
   }
 
   // returns true|false if this intersects incoming segment
+  intersection(segment) {
+    if (!(segment instanceof Segment)) {
+      throw new TypeError('Segment.intersects(segment) requires a Segment argument')
+    }
+
+    const start = Math.max(this.start, segment.start)
+    const end = Math.min(this.end, segment.end)
+
+    if (end > start) {
+      return this.clone({ start, end })
+    }
+
+    return undefined
+  }
+
+  // returns true|false if this intersects incoming segment
   intersects(segment) {
     if (!(segment instanceof Segment)) {
       throw new TypeError('Segment.intersects(segment) requires a Segment argument')
