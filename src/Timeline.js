@@ -81,6 +81,7 @@ class Timeline extends Set {
       }
 
       this._sorted = undefined
+
       return this
     }
 
@@ -92,8 +93,8 @@ class Timeline extends Set {
 
     if (intersections.length === 0) {
       super.add(seg)
-
       this._sorted = undefined
+
       return this
     }
 
@@ -109,6 +110,7 @@ class Timeline extends Set {
     }
 
     this._sorted = undefined
+
     return this
   }
 
@@ -157,16 +159,9 @@ class Timeline extends Set {
 
     let a = t1.shift()
     let b = t2.shift()
-    let ticks = 0
 
-
-    // console.log({ t1, t2, a, b })
-
-    while (a && b && ticks < 100) {
-      // console.log('a', a.constructor.name)
-      // console.log('b', b.constructor.name)
+    while (a && b) {
       const intersection = a.intersection(b)
-      ticks += 1
 
       if (intersection) {
         intersections.push(intersection)
@@ -174,27 +169,11 @@ class Timeline extends Set {
 
       if (a.end < b.end) {
         a = t1.shift()
-        // console.log('shifting from t1', a)
       } else {
         b = t2.shift()
-        // console.log('shifting from t2', b)
       }
     }
 
-    // const start = Math.max(this.start, timeline.start)
-    // const end = Math.min(this.end, timeline.end)
-
-    // const segments = [...timeline]
-    // const intersections = segments.map(seg => this.clone({ start: Math.max(seg.start, start), end: Math.min(seg.end, end) })) // map segments into a series of intersection timelines
-    // const base = new Timeline()
-
-    // for (const t of intersections) {
-    //   for (const s of [...t]) {
-    //     base.add(s) // add each segment to base timeline
-    //   }
-    // }
-
-    // return base
     return intersections.length
     ? new Timeline(...intersections)
     : undefined

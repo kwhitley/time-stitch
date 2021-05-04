@@ -188,7 +188,7 @@ describe('Timeline:Set', () => {
       const filledComplete = timeline.fill(partial1, partial2)
       expect(filledComplete.size).toBe(1)
 
-      const values = filledComplete.values.reduce((set, r) => set.add(r.source), new Set)
+      const values = filledComplete.values.reduce((set, r) => set.add(r.source), new Set())
       expect(values.size).toBe(7)
     })
   })
