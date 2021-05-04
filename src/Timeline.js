@@ -11,8 +11,6 @@ class Timeline extends Set {
 
       if (arg instanceof Segment) {
         this.add(arg)
-      } else if (typeof arg === 'object') {
-        this.options = arg
       }
     }
 
