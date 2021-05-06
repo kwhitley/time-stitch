@@ -18,13 +18,19 @@ describe('Timeline:Set', () => {
 
       expect(timeline.size).toBe(2)
     })
+
+    it('can embed options in Timeline (e.g. { fill: 1000 })', () => {
+      const timeline = new Timeline({ every: 1000 })
+
+      expect(timeline.every).toBe(1000)
+    })
   })
 
   describe('.end: boolean', () => {
     it('returns end of last (ordered) segment', () => {
       const timeline = new Timeline(c, a)
 
-      expect(timeline.end).toBe(c.end)
+      expect(timeline.end).toEqual(c.end)
     })
   })
 
@@ -42,13 +48,27 @@ describe('Timeline:Set', () => {
       expect(gap2.start).toBe(c.end)
       expect(gap2.end).toBe(e.start)
     })
-  })
 
-  describe('.start: boolean', () => {
-    it('returns start of first (ordered) segment', () => {
-      const timeline = new Timeline(c, a)
+    it('empty, fixed-size timeline returns same gap', () => {
+      const timeline = new Timeline({ start: full.start, end: full.end })
+      const gaps = timeline.gaps
+      const gap = [...gaps][0]
 
-      expect(timeline.start).toBe(a.start)
+      expect(gaps.size).toBe(1)
+      expect(gap.end).toBe(full.end)
+      expect(gap.start).toBe(full.start)
+    })
+
+    it('fixed-size timeline with interior segment returns outside gaps', () => {
+      const timeline = new Timeline(a, { start: full.start, end: full.end })
+      const gaps = timeline.gaps
+      const [ gap1, gap2 ] = [...gaps]
+
+      expect(gaps.size).toBe(2)
+      expect(gap1.start).toBe(full.start)
+      expect(gap1.end).toBe(a.start)
+      expect(gap2.start).toBe(a.end)
+      expect(gap2.end).toBe(full.end)
     })
   })
 
@@ -63,6 +83,36 @@ describe('Timeline:Set', () => {
       const timeline = new Timeline(a, c)
 
       expect(timeline.isContinuous).toBe(false)
+    })
+  })
+
+  describe('.start: boolean', () => {
+    it('returns start of first (ordered) segment', () => {
+      const timeline = new Timeline(c, a)
+
+      expect(timeline.start).toEqual(a.start)
+    })
+  })
+
+  describe('.values: object[]', () => {
+    it('returns an array of values', () => {
+      const timeline = new Timeline(a)
+
+      expect(timeline.values.length).toBe(a.size)
+    })
+
+    it('returns a filled array of values if { every: number } option is set', () => {
+      const timeline = new Timeline(a, { every: 100 })
+
+      expect(timeline.values.length).toBeGreaterThan(a.size)
+    })
+
+    it('returns a filled array of values if { every: number } option is set and no segments', () => {
+      const every = 100
+      const timeline = new Timeline({ start: a.start, end: a.end, every })
+      const duration = timeline.end - timeline.start
+
+      expect(timeline.values.length).toBe(duration / every)
     })
   })
 
@@ -153,6 +203,18 @@ describe('Timeline:Set', () => {
       expect(timeline).not.toBe(cloned)
       expect(timeline.values.length).toBeGreaterThan(cloned.values.length)
     })
+
+    // it('returns expanded timeline with start/end bounds even if no segments', () => {
+    //   const timeline = new Timeline()
+    //   const end = new Date()
+    //   const start = new Date(new Date() - 1000000)
+    //   const cloned = timeline.clone({ start, end })
+
+    //   expect(cloned.size).toBe(0)
+    //   expect(timeline).not.toBe(cloned)
+    //   expect(cloned.end).toEqual(end)
+    //   expect(cloned.start).toEqual(start)
+    // })
 
     it('returns cropped timeline (fewer segments)', () => {
       const timeline = new Timeline(a, c)

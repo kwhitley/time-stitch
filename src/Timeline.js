@@ -11,25 +11,24 @@ class Timeline extends Set {
 
       if (arg instanceof Segment) {
         this.add(arg)
+      } else if (typeof arg === 'object') {
+        Object.assign(this, { ...arg }) // explode options into base object
       }
     }
 
     return this
   }
 
-  // returns end of all segments
-  get end() {
-    const segs = [...this]
-
-    return segs.length
-            ? segs.map(s => s.end).reduce((highest, v) => v > highest ? v : highest, -Infinity)
-            : undefined
-  }
-
   // returns Timeline of gaps as segments
   get gaps() {
     const timeline = new Timeline()
     const sorted = [...this.sorted]
+
+    if (!sorted.length) {
+      timeline.add({ start: this.start, end: this.end })
+    } else if (this.start < sorted[0].start) {
+      timeline.add({ start: this.start, end: sorted[0].start })
+    }
 
     while (sorted.length > 1) {
       const a = sorted.shift()
@@ -38,21 +37,16 @@ class Timeline extends Set {
       timeline.add(new Segment({ start: a.end, end: b.start }))
     }
 
+    if (sorted.length && sorted[sorted.length-1].end < this.end) {
+      timeline.add({ start: sorted[sorted.length-1].end, end: this.end })
+    }
+
     return timeline
   }
 
   // return true if single segment from start to finish
   get isContinuous() {
     return this.size === 1
-  }
-
-  // returns start of all segments
-  get start() {
-    const segs = [...this]
-
-    return segs.length
-            ? segs.map(s => s.start).reduce((lowest, v) => v < lowest ? v : lowest, Infinity)
-            : undefined
   }
 
   // returns segments, sorted by start date
@@ -64,52 +58,63 @@ class Timeline extends Set {
 
   // returns array values of all segments
   get values() {
-    return this.sorted.map(s => s.sorted).flat()
+    const raw = this.sorted.map(s => s.sorted).flat()
+
+    if (!this.every || !this.start || !this.end) return raw
+
+    let date = Number(this.start)
+    let end = Number(this.end)
+    let values = []
+    let cursor = raw.shift()
+
+    while (date < end) {
+      date += this.every
+
+      if (cursor && cursor.date <= date) {
+        values.push(cursor)
+        cursor = raw.shift()
+      } else {
+        values.push({ date: new Date(date) })
+      }
+    }
+
+    return values
   }
 
   // add segments to timeline
-  add(incoming = [], ...args) {
-    // cache bust
-    // allows n args (sends each independently to this.add)
-    if (args.length) {
-      this.add(incoming)
-
-      for (const arg of args) {
-        this.add(arg)
-      }
-
-      this._sorted = undefined
-
-      return this
-    }
-
+  add(...args) {
+    const incoming = args.shift()
     const seg = incoming instanceof Segment
                 ? incoming
                 : new Segment(incoming)
 
+    // adjust bounds as needed
+    this.start = new Date(Math.min(incoming.start, this.start || Infinity))
+    this.end = new Date(Math.max(incoming.end, this.end || -Infinity))
+
+    // find possible intersections
     const intersections = [...this.sorted].filter(s => s.intersects(seg))
 
-    if (intersections.length === 0) {
+    if (!intersections.length) {
       super.add(seg)
-      this._sorted = undefined
+    } else {
+      const first = intersections.shift()
 
-      return this
-    }
+      // otherwise merge intersecting
+      first.add(seg)
 
-    const first = intersections.shift()
-
-    // otherwise merge intersecting
-    first.add(seg)
-
-    // merge other intersections into first and remove them from set
-    for (const i of intersections) {
-      first.add(i)
-      this.delete(i)
+      // merge other intersections into first and remove them from set
+      for (const i of intersections) {
+        first.add(i)
+        this.delete(i)
+      }
     }
 
     this._sorted = undefined
 
-    return this
+    return args.length
+    ? this.add(...args)
+    : this
   }
 
   // returns segments cropped between start+end
